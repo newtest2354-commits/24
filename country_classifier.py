@@ -12,32 +12,18 @@ from datetime import datetime
 from urllib.parse import urlparse
 import time
 import logging
+import ipaddress
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 class ConfigParser:
     def __init__(self):
         self.lock = threading.Lock()
-        self.cdn_domains = {
-            'cloudflare': ['.cloudflare.com', '.cloudflaressl.com'],
-            'akamai': ['.akamai.net', '.akamaiedge.net', '.akamaihd.net'],
-            'fastly': ['.fastly.net', '.fastlylb.net'],
-            'aws': ['.amazonaws.com', '.cloudfront.net'],
-            'azure': ['.azureedge.net', '.azurefd.net'],
-            'google': ['.googleusercontent.com', '.gstatic.com', '.googlehosted.com']
-        }
         
-        self.country_tlds = {
-            '.ir': 'IR', '.tr': 'TR', '.ru': 'RU', '.de': 'DE', '.fr': 'FR',
-            '.uk': 'GB', '.us': 'US', '.ca': 'CA', '.au': 'AU', '.jp': 'JP',
-            '.kr': 'KR', '.cn': 'CN', '.in': 'IN', '.br': 'BR', '.mx': 'MX',
-            '.it': 'IT', '.es': 'ES', '.nl': 'NL', '.se': 'SE', '.ch': 'CH',
-            '.ae': 'AE', '.sa': 'SA', '.eg': 'EG', '.za': 'ZA', '.ar': 'AR',
-            '.cl': 'CL', '.co': 'CO', '.pe': 'PE', '.ve': 'VE', '.id': 'ID',
-            '.my': 'MY', '.th': 'TH', '.vn': 'VN', '.ph': 'PH', '.sg': 'SG'
-        }
-    
     def parse_vmess(self, config_str):
         try:
             base64_part = config_str[8:]
@@ -208,23 +194,6 @@ class ConfigParser:
             return self.parse_wireguard(config_str)
         
         return None
-    
-    def get_tld_country(self, domain):
-        for tld, country in self.country_tlds.items():
-            if domain.lower().endswith(tld):
-                return country
-        return None
-    
-    def is_cdn_domain(self, domain):
-        if not domain:
-            return False, ''
-        
-        for provider, patterns in self.cdn_domains.items():
-            for pattern in patterns:
-                if domain.endswith(pattern):
-                    return True, provider
-        
-        return False, ''
 
 class DNSResolver:
     def __init__(self):
@@ -271,88 +240,12 @@ class DNSResolver:
         except:
             return []
 
-class ASNResolver:
+class ASNLookup:
     def __init__(self):
         self.cache = {}
         self.cache_file = 'asn_cache.pkl'
         self.lock = threading.Lock()
         self.load_cache()
-        
-        self.asn_country_map = {
-            'AS12880': 'IR',
-            'AS58224': 'IR',
-            'AS20665': 'IR',
-            'AS43754': 'IR',
-            'AS49666': 'IR',
-            'AS57218': 'IR',
-            'AS42473': 'IR',
-            'AS48159': 'IR',
-            'AS197207': 'IR',
-            'AS204196': 'IR',
-            'AS47377': 'TR',
-            'AS9121': 'TR',
-            'AS34984': 'TR',
-            'AS47331': 'TR',
-            'AS15897': 'TR',
-            'AS21342': 'TR',
-            'AS20978': 'TR',
-            'AS25513': 'RU',
-            'AS12389': 'RU',
-            'AS8402': 'RU',
-            'AS13238': 'RU',
-            'AS29076': 'RU',
-            'AS42610': 'RU',
-            'AS24940': 'DE',
-            'AS3320': 'DE',
-            'AS6805': 'DE',
-            'AS8560': 'DE',
-            'AS31334': 'DE',
-            'AS14061': 'DE',
-            'AS16276': 'FR',
-            'AS12876': 'FR',
-            'AS21502': 'FR',
-            'AS15557': 'FR',
-            'AS8075': 'US',
-            'AS14618': 'US',
-            'AS15169': 'US',
-            'AS16509': 'US',
-            'AS7018': 'US',
-            'AS701': 'US',
-            'AS3356': 'US',
-            'AS13414': 'CH',
-            'AS3303': 'CH',
-            'AS51852': 'NL',
-            'AS60404': 'NL',
-            'AS49870': 'NL',
-            'AS60068': 'NL',
-            'AS1403': 'GB',
-            'AS20825': 'GB',
-            'AS54574': 'GB',
-            'AS56630': 'GB',
-            'AS45102': 'SG',
-            'AS3758': 'SG',
-            'AS7497': 'SG',
-            'AS4788': 'MY',
-            'AS9931': 'MY',
-            'AS38193': 'JP',
-            'AS17676': 'JP',
-            'AS4713': 'JP',
-            'AS4766': 'KR',
-            'AS3786': 'KR',
-            'AS9318': 'KR',
-            'AS9808': 'CN',
-            'AS4134': 'CN',
-            'AS4837': 'CN',
-            'AS23724': 'IN',
-            'AS55836': 'IN',
-            'AS9498': 'IN',
-            'AS26347': 'BR',
-            'AS27699': 'BR',
-            'AS53006': 'BR',
-            'AS13999': 'MX',
-            'AS8151': 'MX',
-            'AS22822': 'MX'
-        }
     
     def load_cache(self):
         try:
@@ -369,121 +262,39 @@ class ASNResolver:
         except:
             pass
     
-    def get_asn_country(self, ip):
+    def get_asn_info(self, ip):
         with self.lock:
             if ip in self.cache:
                 return self.cache[ip]
         
-        country = "UNKNOWN"
-        
         try:
-            response = requests.get(f"https://api.hackertarget.com/aslookup/?q={ip}", timeout=5)
-            if response.status_code == 200 and ',' in response.text:
-                parts = response.text.strip().split(',')
-                if len(parts) >= 2:
-                    asn = parts[1].strip()
-                    country = self.asn_country_map.get(asn, "UNKNOWN")
-        except:
-            pass
-        
-        with self.lock:
-            self.cache[ip] = country
-        
-        return country
-
-class GeoIPClassifier:
-    def __init__(self):
-        self.db_path = 'GeoLite2-Country.mmdb'
-        self.cache = {}
-        self.cache_file = 'geoip_cache.pkl'
-        self.lock = threading.Lock()
-        self.load_cache()
-        
-        if not os.path.exists(self.db_path):
-            self.download_geoip_db()
-    
-    def download_geoip_db(self):
-        try:
-            urls = [
-                "https://cdn.jsdelivr.net/gh/P3TERX/GeoLite.mmdb@download/GeoLite2-Country.mmdb",
-                "https://raw.githubusercontent.com/Loyalsoldier/geoip/release/Country.mmdb"
-            ]
-            
-            for url in urls:
-                try:
-                    response = requests.get(url, timeout=30)
-                    if response.status_code == 200:
-                        with open(self.db_path, 'wb') as f:
-                            f.write(response.content)
-                        return
-                except:
-                    continue
-        except:
-            pass
-    
-    def load_cache(self):
-        try:
-            if os.path.exists(self.cache_file):
-                with open(self.cache_file, 'rb') as f:
-                    self.cache = pickle.load(f)
-        except:
-            self.cache = {}
-    
-    def save_cache(self):
-        try:
-            with open(self.cache_file, 'wb') as f:
-                pickle.dump(self.cache, f)
-        except:
-            pass
-    
-    def get_country_by_ipapi(self, ip):
-        try:
-            response = requests.get(f"http://ip-api.com/json/{ip}", timeout=5)
+            response = requests.get(f"https://ipinfo.io/{ip}/json", timeout=5)
             if response.status_code == 200:
                 data = response.json()
-                return data.get('countryCode', 'UNKNOWN')
+                asn = data.get('org', '')
+                country = data.get('country', '')
+                isp = data.get('org', '').lower()
+                
+                result = {
+                    'asn': asn,
+                    'country': country,
+                    'isp': isp
+                }
+                
+                with self.lock:
+                    self.cache[ip] = result
+                
+                return result
         except:
             pass
-        return "UNKNOWN"
-    
-    def get_country_maxmind(self, ip):
-        try:
-            import geoip2.database
-            with geoip2.database.Reader(self.db_path) as reader:
-                response = reader.country(ip)
-                return response.country.iso_code or "UNKNOWN"
-        except:
-            return "UNKNOWN"
-    
-    def get_country(self, ip):
-        with self.lock:
-            if ip in self.cache:
-                return self.cache[ip]
         
-        country = "UNKNOWN"
-        
-        if re.match(r'^172\.|^10\.|^192\.168\.', ip):
-            country = "PRIVATE"
-        elif ':' in ip:
-            country = "IPV6"
-        elif os.path.exists(self.db_path):
-            country = self.get_country_maxmind(ip)
-            if country == "UNKNOWN":
-                country = self.get_country_by_ipapi(ip)
-        else:
-            country = self.get_country_by_ipapi(ip)
-        
-        with self.lock:
-            self.cache[ip] = country
-        
-        return country
+        return None
 
 class CountryClassifier:
     def __init__(self, max_workers=50):
         self.parser = ConfigParser()
         self.dns_resolver = DNSResolver()
-        self.asn_resolver = ASNResolver()
-        self.geoip = GeoIPClassifier()
+        self.asn_lookup = ASNLookup()
         self.max_workers = max_workers
         self.results_lock = threading.Lock()
         self.results = {}
@@ -494,52 +305,218 @@ class CountryClassifier:
             'by_country': {},
             'by_protocol': {}
         }
+        
+        self.asn_country_mapping = {
+            'turksat': 'TR',
+            'turk telekom': 'TR',
+            'turk telekomunikasyon': 'TR',
+            'türk telekom': 'TR',
+            'türk telekomünikasyon': 'TR',
+            'vodafone turkey': 'TR',
+            'turkcell': 'TR',
+            'turknet': 'TR',
+            'pars online': 'IR',
+            'mobinnet': 'IR',
+            'mobin': 'IR',
+            'shatel': 'IR',
+            'irancell': 'IR',
+            'rightel': 'IR',
+            'asia tech': 'IR',
+            'irantelecom': 'IR',
+            'telecommunication company of iran': 'IR',
+            'telecommunication infrastructure company': 'IR',
+            'mci': 'IR',
+            'mtn iran': 'IR',
+            'rtk': 'IR',
+            'iran': 'IR',
+            'hetzner': 'DE',
+            'digitalocean': 'US',
+            'linode': 'US',
+            'vultr': 'US',
+            'aws': 'US',
+            'amazon': 'US',
+            'google': 'US',
+            'microsoft': 'US',
+            'azure': 'US',
+            'oracle': 'US',
+            'alibaba': 'CN',
+            'tencent': 'CN',
+            'huawei': 'CN',
+            'ovh': 'FR',
+            'online.net': 'FR',
+            'contabo': 'DE',
+            'ionos': 'DE',
+            'godaddy': 'US',
+            'namecheap': 'US',
+            'hostinger': 'LT',
+            'bluehost': 'US',
+            'siteground': 'BG',
+            'cloudflare': 'US',
+            'gcore': 'LU',
+            'leaseweb': 'NL',
+            'serverius': 'NL',
+            'worldstream': 'NL',
+            'psychz': 'US',
+            'choopa': 'US',
+            'cogent': 'US',
+            'level3': 'US',
+            'he': 'US',
+            'franken': 'DE',
+            'man-da': 'RU',
+            'selectel': 'RU',
+            'yandex': 'RU',
+            'mts': 'RU',
+            'beeline': 'RU',
+            'megafon': 'RU',
+            'rostelecom': 'RU',
+            'sberbank': 'RU',
+            'gazprom': 'RU',
+        }
     
-    def get_final_country(self, geoip_country, asn_country, hostname, ip):
-        if geoip_country == "UNKNOWN" and asn_country == "UNKNOWN":
-            return "UNKNOWN"
-        
-        if geoip_country == "PRIVATE" or geoip_country == "IPV6":
-            return geoip_country
-        
-        if asn_country != "UNKNOWN" and asn_country != geoip_country:
-            asn_evidence = self.check_asn_evidence(ip, asn_country)
-            geoip_evidence = self.check_geoip_evidence(ip, geoip_country)
+    def is_private_ip(self, ip):
+        try:
+            ip_obj = ipaddress.ip_address(ip)
+            return ip_obj.is_private
+        except:
+            return False
+    
+    def get_country_from_geoip(self, ip):
+        try:
+            import maxminddb
+            reader = maxminddb.open_database('geoip_data/GeoLite2-Country.mmdb')
+            response = reader.get(ip)
+            reader.close()
             
-            if asn_evidence > geoip_evidence:
+            if response and 'country' in response:
+                iso_code = response['country'].get('iso_code', 'UNKNOWN')
+                if iso_code and iso_code != 'UNKNOWN':
+                    return iso_code
+        except:
+            pass
+        
+        try:
+            import geoip2.database
+            with geoip2.database.Reader('geoip_data/GeoLite2-Country.mmdb') as reader:
+                response = reader.country(ip)
+                return response.country.iso_code or 'UNKNOWN'
+        except:
+            pass
+        
+        return 'UNKNOWN'
+    
+    def get_country_from_asn(self, ip):
+        asn_info = self.asn_lookup.get_asn_info(ip)
+        if not asn_info:
+            return None
+        
+        isp_lower = asn_info['isp'].lower()
+        
+        for keyword, country_code in self.asn_country_mapping.items():
+            if keyword in isp_lower:
+                return country_code
+        
+        return asn_info.get('country')
+    
+    def get_country_from_rdns(self, ip):
+        try:
+            hostname = socket.gethostbyaddr(ip)[0]
+            
+            tld_country_map = {
+                '.tr': 'TR',
+                '.ir': 'IR',
+                '.ru': 'RU',
+                '.ua': 'UA',
+                '.by': 'BY',
+                '.kz': 'KZ',
+                '.az': 'AZ',
+                '.ge': 'GE',
+                '.am': 'AM',
+                '.de': 'DE',
+                '.fr': 'FR',
+                '.nl': 'NL',
+                '.uk': 'GB',
+                '.us': 'US',
+                '.ca': 'CA',
+                '.au': 'AU',
+                '.jp': 'JP',
+                '.kr': 'KR',
+                '.cn': 'CN',
+                '.in': 'IN',
+                '.br': 'BR',
+                '.mx': 'MX',
+                '.es': 'ES',
+                '.it': 'IT',
+                '.ch': 'CH',
+                '.se': 'SE',
+                '.no': 'NO',
+                '.dk': 'DK',
+                '.fi': 'FI',
+                '.pl': 'PL',
+                '.cz': 'CZ',
+                '.hu': 'HU',
+                '.ro': 'RO',
+                '.bg': 'BG',
+                '.gr': 'GR',
+                '.il': 'IL',
+                '.sa': 'SA',
+                '.ae': 'AE',
+                '.eg': 'EG',
+                '.za': 'ZA',
+            }
+            
+            for tld, country in tld_country_map.items():
+                if hostname.endswith(tld):
+                    return country
+            
+            for keyword, country in self.asn_country_mapping.items():
+                if keyword in hostname.lower():
+                    return country
+        except:
+            pass
+        
+        return None
+    
+    def determine_country(self, ip, hostname):
+        if self.is_private_ip(ip):
+            return 'PRIVATE'
+        
+        if ':' in ip:
+            return 'IPV6'
+        
+        geoip_country = self.get_country_from_geoip(ip)
+        
+        asn_country = self.get_country_from_asn(ip)
+        
+        rdns_country = self.get_country_from_rdns(ip)
+        
+        votes = {}
+        
+        if geoip_country and geoip_country != 'UNKNOWN':
+            votes[geoip_country] = votes.get(geoip_country, 0) + 3
+        
+        if asn_country and asn_country != 'UNKNOWN':
+            votes[asn_country] = votes.get(asn_country, 0) + 2
+        
+        if rdns_country:
+            votes[rdns_country] = votes.get(rdns_country, 0) + 1
+        
+        if not votes:
+            return 'UNKNOWN'
+        
+        if geoip_country in votes and asn_country in votes and geoip_country != asn_country:
+            if asn_country in ['IR', 'TR', 'RU', 'CN']:
                 return asn_country
         
-        return geoip_country
-    
-    def check_asn_evidence(self, ip, country):
-        evidence = 1
+        max_votes = max(votes.values())
+        candidates = [country for country, votes_count in votes.items() if votes_count == max_votes]
         
-        try:
-            response = requests.get(f"https://api.hackertarget.com/aslookup/?q={ip}", timeout=3)
-            if response.status_code == 200:
-                text = response.text.lower()
-                if country.lower() in text:
-                    evidence += 1
-        except:
-            pass
+        if len(candidates) == 1:
+            return candidates[0]
         
-        return evidence
-    
-    def check_geoip_evidence(self, ip, country):
-        evidence = 1
+        if geoip_country in candidates:
+            return geoip_country
         
-        try:
-            response = requests.get(f"http://ip-api.com/json/{ip}", timeout=3)
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('countryCode') == country:
-                    evidence += 1
-                if data.get('region') and country in ['US', 'CA', 'AU', 'CN', 'IN', 'BR']:
-                    evidence += 0.5
-        except:
-            pass
-        
-        return evidence
+        return candidates[0] if candidates else 'UNKNOWN'
     
     def process_single_config(self, config_str):
         try:
@@ -547,14 +524,11 @@ class CountryClassifier:
             if not parsed:
                 return None
             
-            target_host = parsed.get('host', '')
-            sni = parsed.get('sni', '')
-            
+            target_host = parsed.get('sni', '') or parsed.get('host', '')
             if not target_host:
                 return None
             
             is_ip = re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', target_host)
-            
             if not is_ip:
                 is_ipv6 = ':' in target_host and not target_host.startswith('[')
                 if not is_ipv6:
@@ -567,19 +541,7 @@ class CountryClassifier:
             else:
                 ip = target_host
             
-            if re.match(r'^172\.|^10\.|^192\.168\.', ip):
-                country = "PRIVATE"
-            elif ':' in ip:
-                country = "IPV6"
-            else:
-                geoip_country = self.geoip.get_country(ip)
-                asn_country = self.asn_resolver.get_asn_country(ip)
-                
-                is_cdn, cdn_provider = self.parser.is_cdn_domain(target_host)
-                if is_cdn:
-                    country = "CDN"
-                else:
-                    country = self.get_final_country(geoip_country, asn_country, target_host, ip)
+            country = self.determine_country(ip, target_host)
             
             return {
                 'config': config_str,
@@ -651,8 +613,7 @@ class CountryClassifier:
                         self.stats['failed'] += 1
         
         self.dns_resolver.save_cache()
-        self.geoip.save_cache()
-        self.asn_resolver.save_cache()
+        self.asn_lookup.save_cache()
         
         return {
             'results': self.results,
@@ -756,7 +717,7 @@ def read_all_configs():
 
 def main():
     print("=" * 60)
-    print("COUNTRY CONFIG CLASSIFIER")
+    print("ENHANCED COUNTRY CONFIG CLASSIFIER")
     print("=" * 60)
     
     try:
@@ -797,6 +758,8 @@ def main():
         
     except Exception as e:
         logger.error(f"Error in main: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
 
 if __name__ == "__main__":
     main()
