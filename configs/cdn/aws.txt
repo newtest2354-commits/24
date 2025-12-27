@@ -1,0 +1,5 @@
+# CDN Configurations - aws
+# Updated: 2025-12-27 15:51:20
+# Count: 1
+
+vless://f8a6db2e-3cd5-4a9c-ae83-65a1337da847@ec2-3-87-68-123.compute-1.amazonaws.com:80?path=/&security=none&encryption=none&host=ec2-3-87-68-123.compute-1.amazonaws.com&fp=chrome&type=ws#ARISTA🔥

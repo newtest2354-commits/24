@@ -1,0 +1,45 @@
+# RU - HYSTERIA Configurations
+# Updated: 2025-12-27 15:51:20
+# Count: 40
+# Country Code: RU
+
+hysteria2://faa8b629-13ea-4ccd-94dd-ff1615cb1ba1@nl1.oomz.ru:30000?security=tls&insecure=1&sni=bing.com#ARISTA🔥
+hysteria2://7b5cbc6a-90a1-4b6e-994e-4c198b85f80b@uk2.oomz.ru:30000?security=tls&insecure=1&sni=bing.com#ARISTA🔥
+hysteria2://7b5cbc6a-90a1-4b6e-994e-4c198b85f80b@de2.oomz.ru:30000?security=tls&insecure=1&sni=bing.com#ARISTA🔥
+hysteria2://7b5cbc6a-90a1-4b6e-994e-4c198b85f80b@nl1.oomz.ru:30000?security=tls&insecure=1&sni=bing.com#ARISTA🔥
+hysteria2://e7965e64-e001-4e8c-8273-39c61ff4a094@sg3.oomz.ru:30000?insecure=1&sni=bing.com#ARISTA🔥
+hysteria2://e7965e64-e001-4e8c-8273-39c61ff4a094@tw.oomz.ru:30000?insecure=1&sni=bing.com#ARISTA🔥
+hysteria2://7b5cbc6a-90a1-4b6e-994e-4c198b85f80b@de2.oomz.ru:30000?insecure=1&sni=bing.com#ARISTA🔥
+hysteria2://7b5cbc6a-90a1-4b6e-994e-4c198b85f80b@nl1.oomz.ru:30000?insecure=1&sni=bing.com#ARISTA🔥
+hysteria2://7b5cbc6a-90a1-4b6e-994e-4c198b85f80b@uk2.oomz.ru:30000?insecure=1&sni=bing.com#ARISTA🔥
+hysteria2://d3da4e16-9bef-4e54-9bd9-960d32740392@sb1.oomz.ru:30000?insecure=1&sni=bing.com#ARISTA🔥
+hysteria2://d3da4e16-9bef-4e54-9bd9-960d32740392@sb2.oomz.ru:30000?insecure=1&sni=bing.com#ARISTA🔥
+hysteria2://faa8b629-13ea-4ccd-94dd-ff1615cb1ba1@de3.oomz.ru:30000?insecure=1&sni=bing.com#ARISTA🔥
+hysteria2://faa8b629-13ea-4ccd-94dd-ff1615cb1ba1@nl1.oomz.ru:30000?insecure=1&sni=bing.com#ARISTA🔥
+hysteria2://d3da4e16-9bef-4e54-9bd9-960d32740392@sb1.oomz.ru:30000?security=tls&insecure=1&sni=bing.com#ARISTA🔥
+hysteria2://d3da4e16-9bef-4e54-9bd9-960d32740392@sb2.oomz.ru:30000?security=tls&insecure=1&sni=bing.com#ARISTA🔥
+hysteria2://faa8b629-13ea-4ccd-94dd-ff1615cb1ba1@de3.oomz.ru:30000?security=tls&insecure=1&sni=bing.com#ARISTA🔥
+hysteria2://7b5cbc6a-90a1-4b6e-994e-4c198b85f80b@de2.oomz.ru:30000?security=tls&amp;insecure=1&amp;sni=bing.com#ARISTA🔥
+hysteria2://7b5cbc6a-90a1-4b6e-994e-4c198b85f80b@hk1.oomz.ru:50000?sni=bing.com&amp;insecure=1#ARISTA🔥
+hysteria2://7b5cbc6a-90a1-4b6e-994e-4c198b85f80b@hk1.oomz.ru:50000?sni=bing.com&insecure=1#ARISTA🔥
+hysteria2://7b5cbc6a-90a1-4b6e-994e-4c198b85f80b@hk2.oomz.ru:50000?sni=bing.com&amp;insecure=1#ARISTA🔥
+hysteria2://7b5cbc6a-90a1-4b6e-994e-4c198b85f80b@hk2.oomz.ru:50000?sni=bing.com&insecure=1#ARISTA🔥
+hysteria2://7b5cbc6a-90a1-4b6e-994e-4c198b85f80b@nl1.oomz.ru:30000?security=tls&amp;insecure=1&amp;sni=bing.com#ARISTA🔥
+hysteria2://7b5cbc6a-90a1-4b6e-994e-4c198b85f80b@sg3.oomz.ru:30000?sni=bing.com&insecure=1#ARISTA🔥
+hysteria2://7b5cbc6a-90a1-4b6e-994e-4c198b85f80b@uk2.oomz.ru:30000?security=tls&amp;insecure=1&amp;sni=bing.com#ARISTA🔥
+hysteria2://937f8940-ad8a-409f-93c3-4d6249af628f@de2.oomz.ru:30000?insecure=1&sni=bing.com#ARISTA🔥
+hysteria2://937f8940-ad8a-409f-93c3-4d6249af628f@de2.oomz.ru:30000?security=tls&insecure=1&sni=bing.com#ARISTA🔥
+hysteria2://937f8940-ad8a-409f-93c3-4d6249af628f@de3.oomz.ru:30000?insecure=1&sni=bing.com#ARISTA🔥
+hysteria2://937f8940-ad8a-409f-93c3-4d6249af628f@de3.oomz.ru:30000?security=tls&insecure=1&sni=bing.com#ARISTA🔥
+hysteria2://d3b0b361-b878-4246-8a0e-ae86f6caa1f9@fr1.oomz.ru:30000?insecure=1&sni=bing.com#ARISTA🔥
+hysteria2://d3b0b361-b878-4246-8a0e-ae86f6caa1f9@fr2.oomz.ru:30000?insecure=1&sni=bing.com#ARISTA🔥
+hysteria2://d3b0b361-b878-4246-8a0e-ae86f6caa1f9@fr2.oomz.ru:30000?sni=bing.com&insecure=1#ARISTA🔥
+hysteria2://d3b0b361-b878-4246-8a0e-ae86f6caa1f9@sg4.oomz.ru:30000?insecure=1&sni=bing.com#ARISTA🔥
+hysteria2://d3b0b361-b878-4246-8a0e-ae86f6caa1f9@uk1.oomz.ru:30000?insecure=1&sni=bing.com#ARISTA🔥
+hysteria2://d3b0b361-b878-4246-8a0e-ae86f6caa1f9@us1.oomz.ru:30000?insecure=1&sni=bing.com#ARISTA🔥
+hysteria2://d3b0b361-b878-4246-8a0e-ae86f6caa1f9@us1.oomz.ru:30000?sni=bing.com&insecure=1#ARISTA🔥
+hysteria2://d3b0b361-b878-4246-8a0e-ae86f6caa1f9@us5.oomz.ru:30000?insecure=1&sni=bing.com#ARISTA🔥
+hysteria2://d3b0b361-b878-4246-8a0e-ae86f6caa1f9@us6.oomz.ru:30000?insecure=1&sni=bing.com#ARISTA🔥
+hysteria2://d3b0b361-b878-4246-8a0e-ae86f6caa1f9@us7.oomz.ru:30000?insecure=1&sni=bing.com#ARISTA🔥
+hysteria2://d3b0b361-b878-4246-8a0e-ae86f6caa1f9@us8.oomz.ru:30000?insecure=1&sni=bing.com#ARISTA🔥
+hysteria2://faa8b629-13ea-4ccd-94dd-ff1615cb1ba1@nl1.oomz.ru:30000?security=tls&amp;insecure=1&amp;sni=bing.com#ARISTA🔥

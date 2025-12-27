@@ -1,0 +1,7 @@
+# All Configurations for CL
+# Updated: 2025-12-27 15:51:20
+# Total Count: 2
+# Country Code: CL
+
+hysteria2://TELEGRAM-ID-mrknowsit.TELEGRAM-ID-mrknowsit@repuestoslibertad.cl.repuestoslibertad.cl:2084?security=tls&obfs=salamander&obfs-password=ed5s8665dsss&insecure=0#ARISTA🔥
+ss://YWVzLTI1Ni1nY206a0RXdlhZWm9UQmNHa0M0@38.54.20.59:8881#ARISTA🔥
