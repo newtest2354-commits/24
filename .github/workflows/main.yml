@@ -32,7 +32,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install requests beautifulsoup4 geoip2
+        pip install requests beautifulsoup4 geoip2 maxminddb
         
     - name: Clean old config files
       run: |
@@ -50,15 +50,17 @@ jobs:
     - name: Combine Configs
       run: python combine_configs.py
         
-    - name: Run Country Classifier
-      run: python country_classifier.py
-      timeout-minutes: 35
-      env:
-        MAX_WORKERS: 25
-        
-    - name: Install additional dependencies for country classifier
+    - name: Download GeoIP Database
       run: |
-        pip install geoip2
+        mkdir -p geoip_data
+        wget -q -O geoip_data/GeoLite2-Country.mmdb "https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-Country.mmdb" || \
+        wget -q -O geoip_data/GeoLite2-Country.mmdb "https://cdn.jsdelivr.net/gh/P3TERX/GeoLite.mmdb@download/GeoLite2-Country.mmdb"
+        
+    - name: Run Enhanced Country Classifier
+      run: python country_classifier.py
+      timeout-minutes: 30
+      env:
+        MAX_WORKERS: 20
         
     - name: Create summary
       run: |
@@ -67,7 +69,7 @@ jobs:
         echo "Telegram configs: $(wc -l < configs/telegram/all.txt 2>/dev/null || echo 0)" >> update_info.txt
         echo "GitHub configs: $(wc -l < configs/github/all.txt 2>/dev/null || echo 0)" >> update_info.txt
         echo "Combined configs: $(wc -l < configs/combined/all.txt 2>/dev/null || echo 0)" >> update_info.txt
-        echo "Country classification completed" >> update_info.txt
+        echo "Country-classified configs: $(find configs/country -name '*.txt' -exec cat {} \; 2>/dev/null | grep -v '^#' | wc -l || echo 0)" >> update_info.txt
         
     - name: Configure Git
       run: |
@@ -84,7 +86,7 @@ jobs:
         if git diff --staged --quiet; then
           echo "No changes to commit"
         else
-          git commit -m "🔄 Configs update $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git commit -m "🔄 Configs update $(date -u '+%Y-%m-%d %H:%M')"
           git pull origin main --rebase --autostash
           git push origin main
         fi
