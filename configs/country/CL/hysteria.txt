@@ -1,6 +1,0 @@
-# CL - HYSTERIA Configurations
-# Updated: 2025-12-27 15:51:20
-# Count: 1
-# Country Code: CL
-
-hysteria2://TELEGRAM-ID-mrknowsit.TELEGRAM-ID-mrknowsit@repuestoslibertad.cl.repuestoslibertad.cl:2084?security=tls&obfs=salamander&obfs-password=ed5s8665dsss&insecure=0#ARISTA🔥

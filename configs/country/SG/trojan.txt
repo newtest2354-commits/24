@@ -1,6 +1,0 @@
-# SG - TROJAN Configurations
-# Updated: 2025-12-27 15:51:20
-# Count: 1
-# Country Code: SG
-
-trojan://G9CHhXltVx@96.9.213.108:12646?security=tls&headerType=none&type=tcp#ARISTA🔥

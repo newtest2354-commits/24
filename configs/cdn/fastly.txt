@@ -1,6 +1,0 @@
-# CDN Configurations - fastly
-# Updated: 2025-12-27 15:51:20
-# Count: 2
-
-vless://255f75a1-81db-c671-875e-08eb9b9d9d66@Nordicsystemback.global.ssl.fastly.net:80?mode=auto&path=%2F&security=&encryption=none&host=Nordicsystemback.global.ssl.fastly.net&type=xhttp#ARISTA🔥
-vless://58a2d971-ab7d-4895-b9f6-96b929cc85ad@crtvbyun.global.ssl.fastly.net:80?mode=auto&path=/&security=none&encryption=none&host=freefree1213.global.ssl.fastly.net&type=xhttp#ARISTA🔥
