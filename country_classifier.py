@@ -13,177 +13,30 @@ from urllib.parse import urlparse
 import time
 import logging
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-
-class DomainCountryDetector:
-    def __init__(self):
-        self.tld_country_map = {
-            '.ir': 'IR', '.us': 'US', '.uk': 'GB', '.gb': 'GB',
-            '.de': 'DE', '.fr': 'FR', '.nl': 'NL', '.ru': 'RU',
-            '.tr': 'TR', '.ae': 'AE', '.sa': 'SA', '.qa': 'QA',
-            '.kw': 'KW', '.om': 'OM', '.bh': 'BH', '.jo': 'JO',
-            '.lb': 'LB', '.eg': 'EG', '.sy': 'SY', '.iq': 'IQ',
-            '.az': 'AZ', '.am': 'AM', '.ge': 'GE', '.kz': 'KZ',
-            '.uz': 'UZ', '.tj': 'TJ', '.tm': 'TM', '.kg': 'KG',
-            '.af': 'AF', '.pk': 'PK', '.in': 'IN', '.cn': 'CN',
-            '.jp': 'JP', '.kr': 'KR', '.sg': 'SG', '.my': 'MY',
-            '.id': 'ID', '.th': 'TH', '.vn': 'VN', '.ph': 'PH',
-            '.au': 'AU', '.ca': 'CA', '.br': 'BR', '.mx': 'MX',
-            '.ar': 'AR', '.cl': 'CL', '.co': 'CO', '.pe': 'PE',
-            '.ch': 'CH', '.se': 'SE', '.no': 'NO', '.fi': 'FI',
-            '.dk': 'DK', '.pl': 'PL', '.cz': 'CZ', '.hu': 'HU',
-            '.at': 'AT', '.it': 'IT', '.es': 'ES', '.pt': 'PT',
-            '.gr': 'GR', '.il': 'IL', '.za': 'ZA', '.ng': 'NG',
-            '.ke': 'KE', '.et': 'ET'
-        }
-        self.domain_patterns = {
-            'IR': ['.ir', '.co.ir', '.ac.ir', '.gov.ir', '.org.ir', '.net.ir', '.sch.ir'],
-            'TR': ['.tr', '.com.tr', '.org.tr', '.net.tr', '.edu.tr', '.gov.tr', '.k12.tr'],
-            'DE': ['.de', '.com.de'],
-            'US': ['.us', '.com', '.net', '.org', '.edu', '.gov'],
-            'RU': ['.ru', '.su', '.рф', '.com.ru', '.org.ru', '.net.ru'],
-            'CN': ['.cn', '.com.cn', '.net.cn', '.org.cn', '.gov.cn', '.中国'],
-            'FR': ['.fr', '.com.fr', '.org.fr'],
-            'GB': ['.uk', '.co.uk', '.org.uk', '.gov.uk', '.ac.uk'],
-            'NL': ['.nl', '.co.nl'],
-            'AE': ['.ae', '.co.ae', '.gov.ae'],
-            'SA': ['.sa', '.com.sa', '.org.sa', '.gov.sa'],
-            'CA': ['.ca', '.co.ca', '.on.ca', '.qc.ca'],
-            'AU': ['.au', '.com.au', '.org.au', '.net.au'],
-            'JP': ['.jp', '.co.jp', '.or.jp', '.go.jp', '.ac.jp'],
-            'KR': ['.kr', '.co.kr', '.or.kr', '.go.kr', '.ac.kr'],
-            'SG': ['.sg', '.com.sg', '.org.sg', '.gov.sg'],
-            'IN': ['.in', '.co.in', '.org.in', '.net.in', '.gov.in'],
-            'BR': ['.br', '.com.br', '.org.br', '.gov.br', '.net.br'],
-            'MX': ['.mx', '.com.mx', '.org.mx', '.gob.mx'],
-            'IT': ['.it', '.com.it', '.org.it', '.gov.it'],
-            'ES': ['.es', '.com.es', '.org.es', '.gob.es'],
-            'PL': ['.pl', '.com.pl', '.org.pl', '.net.pl', '.gov.pl'],
-            'SE': ['.se', '.com.se', '.org.se'],
-            'NO': ['.no', '.com.no', '.org.no'],
-            'DK': ['.dk', '.com.dk', '.org.dk'],
-            'FI': ['.fi', '.com.fi', '.org.fi'],
-            'CH': ['.ch', '.com.ch', '.org.ch'],
-            'AT': ['.at', '.co.at', '.or.at'],
-            'BE': ['.be', '.com.be', '.org.be'],
-            'CZ': ['.cz', '.co.cz', '.org.cz'],
-            'HU': ['.hu', '.co.hu', '.org.hu'],
-            'RO': ['.ro', '.com.ro', '.org.ro'],
-            'BG': ['.bg', '.com.bg', '.org.bg'],
-            'GR': ['.gr', '.com.gr', '.org.gr'],
-            'IL': ['.il', '.co.il', '.org.il', '.gov.il', '.ac.il'],
-            'ZA': ['.za', '.co.za', '.org.za'],
-            'EG': ['.eg', '.com.eg', '.org.eg', '.gov.eg', '.edu.eg'],
-            'MA': ['.ma', '.co.ma', '.org.ma', '.gov.ma'],
-            'TN': ['.tn', '.com.tn', '.org.tn', '.gov.tn'],
-            'DZ': ['.dz', '.com.dz', '.org.dz', '.gov.dz'],
-            'LY': ['.ly', '.com.ly', '.org.ly', '.gov.ly'],
-            'SD': ['.sd', '.com.sd', '.org.sd', '.gov.sd'],
-            'YE': ['.ye', '.com.ye', '.org.ye', '.gov.ye'],
-            'SO': ['.so', '.com.so', '.org.so', '.gov.so'],
-            'DJ': ['.dj', '.com.dj', '.org.dj', '.gov.dj'],
-            'KM': ['.km', '.com.km', '.org.km', '.gov.km'],
-            'MR': ['.mr', '.com.mr', '.org.mr', '.gov.mr'],
-            'NE': ['.ne', '.com.ne', '.org.ne', '.gov.ne'],
-            'TD': ['.td', '.com.td', '.org.td', '.gov.td'],
-            'ML': ['.ml', '.com.ml', '.org.ml', '.gov.ml'],
-            'BF': ['.bf', '.com.bf', '.org.bf', '.gov.bf'],
-            'BJ': ['.bj', '.com.bj', '.org.bj', '.gov.bj'],
-            'TG': ['.tg', '.com.tg', '.org.tg', '.gov.tg'],
-            'GH': ['.gh', '.com.gh', '.org.gh', '.gov.gh'],
-            'CI': ['.ci', '.com.ci', '.org.ci', '.gov.ci'],
-            'GN': ['.gn', '.com.gn', '.org.gn', '.gov.gn'],
-            'SN': ['.sn', '.com.sn', '.org.sn', '.gov.sn'],
-            'GM': ['.gm', '.com.gm', '.org.gm', '.gov.gm'],
-            'GW': ['.gw', '.com.gw', '.org.gw', '.gov.gw'],
-            'LR': ['.lr', '.com.lr', '.org.lr', '.gov.lr'],
-            'SL': ['.sl', '.com.sl', '.org.sl', '.gov.sl'],
-            'NG': ['.ng', '.com.ng', '.org.ng', '.gov.ng'],
-            'CM': ['.cm', '.com.cm', '.org.cm', '.gov.cm'],
-            'GA': ['.ga', '.com.ga', '.org.ga', '.gov.ga'],
-            'CG': ['.cg', '.com.cg', '.org.cg', '.gov.cg'],
-            'CD': ['.cd', '.com.cd', '.org.cd', '.gov.cd'],
-            'AO': ['.ao', '.com.ao', '.org.ao', '.gov.ao'],
-            'NA': ['.na', '.com.na', '.org.na', '.gov.na'],
-            'BW': ['.bw', '.com.bw', '.org.bw', '.gov.bw'],
-            'ZW': ['.zw', '.com.zw', '.org.zw', '.gov.zw'],
-            'MZ': ['.mz', '.com.mz', '.org.mz', '.gov.mz'],
-            'MW': ['.mw', '.com.mw', '.org.mw', '.gov.mw'],
-            'ZM': ['.zm', '.com.zm', '.org.zm', '.gov.zm'],
-            'TZ': ['.tz', '.co.tz', '.or.tz', '.go.tz', '.ac.tz'],
-            'UG': ['.ug', '.co.ug', '.or.ug', '.go.ug', '.ac.ug'],
-            'KE': ['.ke', '.co.ke', '.or.ke', '.go.ke', '.ac.ke'],
-            'ET': ['.et', '.com.et', '.org.et', '.gov.et', '.edu.et'],
-            'SD': ['.sd', '.com.sd', '.org.sd', '.gov.sd'],
-            'SS': ['.ss', '.com.ss', '.org.ss', '.gov.ss'],
-            'ER': ['.er', '.com.er', '.org.er', '.gov.er'],
-            'DJ': ['.dj', '.com.dj', '.org.dj', '.gov.dj']
-        }
-    
-    def get_country_by_domain(self, domain):
-        if not domain:
-            return None
-        
-        domain_lower = domain.lower()
-        
-        for country, patterns in self.domain_patterns.items():
-            for pattern in patterns:
-                if domain_lower.endswith(pattern):
-                    return country
-        
-        for tld, country in self.tld_country_map.items():
-            if domain_lower.endswith(tld):
-                return country
-        
-        return None
 
 class ConfigParser:
     def __init__(self):
+        self.lock = threading.Lock()
         self.cdn_domains = {
-            'cloudflare': [
-                'cloudflare.com', 'cloudflaressl.com', 
-                'workers.dev', 'pages.dev', 'r2.dev'
-            ],
-            'akamai': [
-                'akamai.net', 'akamaiedge.net', 'akamaihd.net',
-                'edgesuite.net', 'edgekey.net'
-            ],
-            'fastly': [
-                'fastly.net', 'fastlylb.net', 'global.ssl.fastly.net'
-            ],
-            'aws': [
-                'amazonaws.com', 'cloudfront.net', 'awsglobalaccelerator.com',
-                's3.amazonaws.com', 'elasticbeanstalk.com'
-            ],
-            'azure': [
-                'azureedge.net', 'azurefd.net', 'azurewebsites.net',
-                'cloudapp.azure.com', 'trafficmanager.net'
-            ],
-            'google': [
-                'googleusercontent.com', 'gstatic.com', 'googlehosted.com',
-                'withgoogle.com', 'googleapis.com', 'appspot.com'
-            ],
-            'alibaba': [
-                'aliyuncs.com', 'alicloud.com', 'aliyun.com'
-            ],
-            'cloudfront': ['cloudfront.net'],
-            'incapsula': ['incapdns.net'],
-            'stackpath': ['stackpathcdn.com'],
-            'keycdn': ['kxcdn.com'],
-            'bunny': ['b-cdn.net'],
-            'cdn77': ['cdn77.org', 'cdn77.net'],
-            'leaseweb': ['lswcdn.net'],
-            'limelight': ['lldns.net'],
-            'cachefly': ['cachefly.net'],
-            'cdnnetworks': ['cdnnetworks.com'],
-            'highwinds': ['hwcdn.net'],
-            'maxcdn': ['maxcdn.com']
+            'cloudflare': ['.cloudflare.com', '.cloudflaressl.com'],
+            'akamai': ['.akamai.net', '.akamaiedge.net', '.akamaihd.net'],
+            'fastly': ['.fastly.net', '.fastlylb.net'],
+            'aws': ['.amazonaws.com', '.cloudfront.net'],
+            'azure': ['.azureedge.net', '.azurefd.net'],
+            'google': ['.googleusercontent.com', '.gstatic.com', '.googlehosted.com']
         }
-        self.domain_detector = DomainCountryDetector()
+        
+        self.country_tlds = {
+            '.ir': 'IR', '.tr': 'TR', '.ru': 'RU', '.de': 'DE', '.fr': 'FR',
+            '.uk': 'GB', '.us': 'US', '.ca': 'CA', '.au': 'AU', '.jp': 'JP',
+            '.kr': 'KR', '.cn': 'CN', '.in': 'IN', '.br': 'BR', '.mx': 'MX',
+            '.it': 'IT', '.es': 'ES', '.nl': 'NL', '.se': 'SE', '.ch': 'CH',
+            '.ae': 'AE', '.sa': 'SA', '.eg': 'EG', '.za': 'ZA', '.ar': 'AR',
+            '.cl': 'CL', '.co': 'CO', '.pe': 'PE', '.ve': 'VE', '.id': 'ID',
+            '.my': 'MY', '.th': 'TH', '.vn': 'VN', '.ph': 'PH', '.sg': 'SG'
+        }
     
     def parse_vmess(self, config_str):
         try:
@@ -356,31 +209,22 @@ class ConfigParser:
         
         return None
     
+    def get_tld_country(self, domain):
+        for tld, country in self.country_tlds.items():
+            if domain.lower().endswith(tld):
+                return country
+        return None
+    
     def is_cdn_domain(self, domain):
         if not domain:
-            return False, None
+            return False, ''
         
-        domain_lower = domain.lower()
-        
-        for provider, domains in self.cdn_domains.items():
-            for cdn_domain in domains:
-                if domain_lower.endswith(cdn_domain):
+        for provider, patterns in self.cdn_domains.items():
+            for pattern in patterns:
+                if domain.endswith(pattern):
                     return True, provider
         
-        cdn_keywords = ['cdn', 'cache', 'edge', 'cloud', 'global', 'accelerator']
-        for keyword in cdn_keywords:
-            if keyword in domain_lower:
-                return True, 'generic'
-        
-        return False, None
-    
-    def get_target_host(self, parsed_config):
-        sni = parsed_config.get('sni', '')
-        host = parsed_config.get('host', '')
-        
-        if sni:
-            return sni
-        return host
+        return False, ''
 
 class DNSResolver:
     def __init__(self):
@@ -401,8 +245,8 @@ class DNSResolver:
         try:
             with open(self.cache_file, 'wb') as f:
                 pickle.dump(self.cache, f)
-        except Exception as e:
-            logger.error(f"Failed to save DNS cache: {e}")
+        except:
+            pass
     
     def resolve(self, hostname, timeout=5.0):
         with self.lock:
@@ -424,12 +268,128 @@ class DNSResolver:
                 self.cache[hostname] = (ips, time.time())
             
             return ips
-        except socket.gaierror:
+        except:
             return []
-        except socket.timeout:
-            return []
-        except Exception as e:
-            return []
+
+class ASNResolver:
+    def __init__(self):
+        self.cache = {}
+        self.cache_file = 'asn_cache.pkl'
+        self.lock = threading.Lock()
+        self.load_cache()
+        
+        self.asn_country_map = {
+            'AS12880': 'IR',
+            'AS58224': 'IR',
+            'AS20665': 'IR',
+            'AS43754': 'IR',
+            'AS49666': 'IR',
+            'AS57218': 'IR',
+            'AS42473': 'IR',
+            'AS48159': 'IR',
+            'AS197207': 'IR',
+            'AS204196': 'IR',
+            'AS47377': 'TR',
+            'AS9121': 'TR',
+            'AS34984': 'TR',
+            'AS47331': 'TR',
+            'AS15897': 'TR',
+            'AS21342': 'TR',
+            'AS20978': 'TR',
+            'AS25513': 'RU',
+            'AS12389': 'RU',
+            'AS8402': 'RU',
+            'AS13238': 'RU',
+            'AS29076': 'RU',
+            'AS42610': 'RU',
+            'AS24940': 'DE',
+            'AS3320': 'DE',
+            'AS6805': 'DE',
+            'AS8560': 'DE',
+            'AS31334': 'DE',
+            'AS14061': 'DE',
+            'AS16276': 'FR',
+            'AS12876': 'FR',
+            'AS21502': 'FR',
+            'AS15557': 'FR',
+            'AS8075': 'US',
+            'AS14618': 'US',
+            'AS15169': 'US',
+            'AS16509': 'US',
+            'AS7018': 'US',
+            'AS701': 'US',
+            'AS3356': 'US',
+            'AS13414': 'CH',
+            'AS3303': 'CH',
+            'AS51852': 'NL',
+            'AS60404': 'NL',
+            'AS49870': 'NL',
+            'AS60068': 'NL',
+            'AS1403': 'GB',
+            'AS20825': 'GB',
+            'AS54574': 'GB',
+            'AS56630': 'GB',
+            'AS45102': 'SG',
+            'AS3758': 'SG',
+            'AS7497': 'SG',
+            'AS4788': 'MY',
+            'AS9931': 'MY',
+            'AS38193': 'JP',
+            'AS17676': 'JP',
+            'AS4713': 'JP',
+            'AS4766': 'KR',
+            'AS3786': 'KR',
+            'AS9318': 'KR',
+            'AS9808': 'CN',
+            'AS4134': 'CN',
+            'AS4837': 'CN',
+            'AS23724': 'IN',
+            'AS55836': 'IN',
+            'AS9498': 'IN',
+            'AS26347': 'BR',
+            'AS27699': 'BR',
+            'AS53006': 'BR',
+            'AS13999': 'MX',
+            'AS8151': 'MX',
+            'AS22822': 'MX'
+        }
+    
+    def load_cache(self):
+        try:
+            if os.path.exists(self.cache_file):
+                with open(self.cache_file, 'rb') as f:
+                    self.cache = pickle.load(f)
+        except:
+            self.cache = {}
+    
+    def save_cache(self):
+        try:
+            with open(self.cache_file, 'wb') as f:
+                pickle.dump(self.cache, f)
+        except:
+            pass
+    
+    def get_asn_country(self, ip):
+        with self.lock:
+            if ip in self.cache:
+                return self.cache[ip]
+        
+        country = "UNKNOWN"
+        
+        try:
+            response = requests.get(f"https://api.hackertarget.com/aslookup/?q={ip}", timeout=5)
+            if response.status_code == 200 and ',' in response.text:
+                parts = response.text.strip().split(',')
+                if len(parts) >= 2:
+                    asn = parts[1].strip()
+                    country = self.asn_country_map.get(asn, "UNKNOWN")
+        except:
+            pass
+        
+        with self.lock:
+            self.cache[ip] = country
+        
+        return country
 
 class GeoIPClassifier:
     def __init__(self):
@@ -445,7 +405,6 @@ class GeoIPClassifier:
     def download_geoip_db(self):
         try:
             urls = [
-                "https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-Country.mmdb",
                 "https://cdn.jsdelivr.net/gh/P3TERX/GeoLite.mmdb@download/GeoLite2-Country.mmdb",
                 "https://raw.githubusercontent.com/Loyalsoldier/geoip/release/Country.mmdb"
             ]
@@ -474,8 +433,8 @@ class GeoIPClassifier:
         try:
             with open(self.cache_file, 'wb') as f:
                 pickle.dump(self.cache, f)
-        except Exception as e:
-            logger.error(f"Failed to save GeoIP cache: {e}")
+        except:
+            pass
     
     def get_country_by_ipapi(self, ip):
         try:
@@ -487,15 +446,12 @@ class GeoIPClassifier:
             pass
         return "UNKNOWN"
     
-    def get_country_fallback(self, ip):
+    def get_country_maxmind(self, ip):
         try:
-            if ip.startswith('172.') or ip.startswith('10.') or ip.startswith('192.168.'):
-                return "PRIVATE"
-            
-            if ':' in ip:
-                return "IPV6"
-                
-            return "UNKNOWN"
+            import geoip2.database
+            with geoip2.database.Reader(self.db_path) as reader:
+                response = reader.country(ip)
+                return response.country.iso_code or "UNKNOWN"
         except:
             return "UNKNOWN"
     
@@ -504,48 +460,86 @@ class GeoIPClassifier:
             if ip in self.cache:
                 return self.cache[ip]
         
-        country_code = "UNKNOWN"
+        country = "UNKNOWN"
         
-        try:
-            if os.path.exists(self.db_path):
-                import geoip2.database
-                
-                with geoip2.database.Reader(self.db_path) as reader:
-                    try:
-                        response = reader.country(ip)
-                        country_code = response.country.iso_code or "UNKNOWN"
-                    except:
-                        country_code = self.get_country_by_ipapi(ip)
-            else:
-                country_code = self.get_country_by_ipapi(ip)
-                
-        except ImportError:
-            country_code = self.get_country_by_ipapi(ip)
-        except Exception as e:
-            country_code = self.get_country_fallback(ip)
+        if re.match(r'^172\.|^10\.|^192\.168\.', ip):
+            country = "PRIVATE"
+        elif ':' in ip:
+            country = "IPV6"
+        elif os.path.exists(self.db_path):
+            country = self.get_country_maxmind(ip)
+            if country == "UNKNOWN":
+                country = self.get_country_by_ipapi(ip)
+        else:
+            country = self.get_country_by_ipapi(ip)
         
         with self.lock:
-            self.cache[ip] = country_code
+            self.cache[ip] = country
         
-        return country_code
+        return country
 
 class CountryClassifier:
     def __init__(self, max_workers=50):
         self.parser = ConfigParser()
         self.dns_resolver = DNSResolver()
+        self.asn_resolver = ASNResolver()
         self.geoip = GeoIPClassifier()
         self.max_workers = max_workers
         self.results_lock = threading.Lock()
         self.results = {}
-        self.cdn_configs = {}
         self.stats = {
             'total': 0,
             'success': 0,
             'failed': 0,
             'by_country': {},
-            'by_protocol': {},
-            'cdn_count': 0
+            'by_protocol': {}
         }
+    
+    def get_final_country(self, geoip_country, asn_country, hostname, ip):
+        if geoip_country == "UNKNOWN" and asn_country == "UNKNOWN":
+            return "UNKNOWN"
+        
+        if geoip_country == "PRIVATE" or geoip_country == "IPV6":
+            return geoip_country
+        
+        if asn_country != "UNKNOWN" and asn_country != geoip_country:
+            asn_evidence = self.check_asn_evidence(ip, asn_country)
+            geoip_evidence = self.check_geoip_evidence(ip, geoip_country)
+            
+            if asn_evidence > geoip_evidence:
+                return asn_country
+        
+        return geoip_country
+    
+    def check_asn_evidence(self, ip, country):
+        evidence = 1
+        
+        try:
+            response = requests.get(f"https://api.hackertarget.com/aslookup/?q={ip}", timeout=3)
+            if response.status_code == 200:
+                text = response.text.lower()
+                if country.lower() in text:
+                    evidence += 1
+        except:
+            pass
+        
+        return evidence
+    
+    def check_geoip_evidence(self, ip, country):
+        evidence = 1
+        
+        try:
+            response = requests.get(f"http://ip-api.com/json/{ip}", timeout=3)
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('countryCode') == country:
+                    evidence += 1
+                if data.get('region') and country in ['US', 'CA', 'AU', 'CN', 'IN', 'BR']:
+                    evidence += 0.5
+        except:
+            pass
+        
+        return evidence
     
     def process_single_config(self, config_str):
         try:
@@ -553,78 +547,60 @@ class CountryClassifier:
             if not parsed:
                 return None
             
-            target_host = self.parser.get_target_host(parsed)
+            target_host = parsed.get('host', '')
+            sni = parsed.get('sni', '')
+            
             if not target_host:
                 return None
             
-            is_cdn, cdn_provider = self.parser.is_cdn_domain(target_host)
-            if is_cdn:
-                with self.results_lock:
-                    if cdn_provider not in self.cdn_configs:
-                        self.cdn_configs[cdn_provider] = []
-                    self.cdn_configs[cdn_provider].append(config_str)
-                    self.stats['cdn_count'] += 1
-                
-                return {
-                    'config': config_str,
-                    'parsed': parsed,
-                    'host': target_host,
-                    'country': 'CDN',
-                    'cdn_provider': cdn_provider,
-                    'is_cdn': True
-                }
-            
-            country_by_domain = self.parser.domain_detector.get_country_by_domain(target_host)
-            
             is_ip = re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', target_host)
+            
             if not is_ip:
                 is_ipv6 = ':' in target_host and not target_host.startswith('[')
                 if not is_ipv6:
                     ips = self.dns_resolver.resolve(target_host, timeout=3.0)
                     if not ips:
-                        if country_by_domain:
-                            ip_country = country_by_domain
-                        else:
-                            return None
-                    else:
-                        ip = ips[0]
-                        ip_country = self.geoip.get_country(ip)
+                        return None
+                    ip = ips[0]
                 else:
                     ip = target_host
-                    ip_country = self.geoip.get_country(ip)
             else:
                 ip = target_host
-                ip_country = self.geoip.get_country(ip)
             
-            if ip_country == "UNKNOWN" and country_by_domain:
-                country = country_by_domain
+            if re.match(r'^172\.|^10\.|^192\.168\.', ip):
+                country = "PRIVATE"
+            elif ':' in ip:
+                country = "IPV6"
             else:
-                country = ip_country
+                geoip_country = self.geoip.get_country(ip)
+                asn_country = self.asn_resolver.get_asn_country(ip)
+                
+                is_cdn, cdn_provider = self.parser.is_cdn_domain(target_host)
+                if is_cdn:
+                    country = "CDN"
+                else:
+                    country = self.get_final_country(geoip_country, asn_country, target_host, ip)
             
             return {
                 'config': config_str,
                 'parsed': parsed,
-                'ip': ip if 'ip' in locals() else None,
+                'ip': ip,
                 'country': country,
-                'is_cdn': False,
-                'cdn_provider': None,
                 'host': target_host
             }
-        except Exception as e:
+        except:
             return None
     
     def process_configs(self, configs):
         logger.info(f"Processing {len(configs)} configurations...")
         
         self.results = {}
-        self.cdn_configs = {}
         self.stats = {
             'total': len(configs),
             'success': 0,
             'failed': 0,
             'by_country': {},
-            'by_protocol': {},
-            'cdn_count': 0
+            'by_protocol': {}
         }
         
         unique_configs = []
@@ -638,13 +614,20 @@ class CountryClassifier:
         
         logger.info(f"After deduplication: {len(unique_configs)} unique configs")
         
+        show_progress = len(unique_configs) <= 10000
+        
         with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             future_to_config = {
                 executor.submit(self.process_single_config, config): config 
                 for config in unique_configs
             }
             
+            completed = 0
             for future in concurrent.futures.as_completed(future_to_config):
+                completed += 1
+                if show_progress and completed % 100 == 0:
+                    logger.info(f"Processed {completed}/{len(unique_configs)} configs")
+                
                 result = future.result()
                 if result:
                     with self.results_lock:
@@ -669,10 +652,10 @@ class CountryClassifier:
         
         self.dns_resolver.save_cache()
         self.geoip.save_cache()
+        self.asn_resolver.save_cache()
         
         return {
             'results': self.results,
-            'cdn_configs': self.cdn_configs,
             'stats': self.stats
         }
     
@@ -706,37 +689,8 @@ class CountryClassifier:
                 content = f"# All Configurations for {country}\n"
                 content += f"# Updated: {timestamp}\n"
                 content += f"# Total Count: {len(all_country_configs)}\n"
-                content += f"# Country Code: {country}\n\n"
+                    content += f"# Country Code: {country}\n\n"
                 content += "\n".join(all_country_configs)
-                
-                with open(all_file, 'w', encoding='utf-8') as f:
-                    f.write(content)
-        
-        if results['cdn_configs']:
-            cdn_dir = 'configs/cdn'
-            os.makedirs(cdn_dir, exist_ok=True)
-            
-            all_cdn_configs = []
-            
-            for provider, configs in results['cdn_configs'].items():
-                if configs:
-                    provider_file = os.path.join(cdn_dir, f"{provider}.txt")
-                    content = f"# CDN Configurations - {provider}\n"
-                    content += f"# Updated: {timestamp}\n"
-                    content += f"# Count: {len(configs)}\n\n"
-                    content += "\n".join(configs)
-                    
-                    with open(provider_file, 'w', encoding='utf-8') as f:
-                        f.write(content)
-                    
-                    all_cdn_configs.extend(configs)
-            
-            if all_cdn_configs:
-                all_file = os.path.join(cdn_dir, "all.txt")
-                content = f"# All CDN Configurations\n"
-                content += f"# Updated: {timestamp}\n"
-                content += f"# Total Count: {len(all_cdn_configs)}\n\n"
-                content += "\n".join(all_cdn_configs)
                 
                 with open(all_file, 'w', encoding='utf-8') as f:
                     f.write(content)
@@ -751,8 +705,7 @@ class CountryClassifier:
             f.write(f"# Updated: {timestamp}\n\n")
             f.write(f"Total configs processed: {results['stats']['total']}\n")
             f.write(f"Successfully classified: {results['stats']['success']}\n")
-            f.write(f"Failed to classify: {results['stats']['failed']}\n")
-            f.write(f"CDN configs: {results['stats']['cdn_count']}\n\n")
+            f.write(f"Failed to classify: {results['stats']['failed']}\n\n")
             
             f.write("By Country:\n")
             for country, count in sorted(results['stats']['by_country'].items(), key=lambda x: x[1], reverse=True):
@@ -761,6 +714,8 @@ class CountryClassifier:
             f.write("\nBy Protocol:\n")
             for protocol, count in sorted(results['stats']['by_protocol'].items(), key=lambda x: x[1], reverse=True):
                 f.write(f"  {protocol}: {count}\n")
+        
+        logger.info(f"Results saved to {output_dir}")
 
 def read_all_configs():
     configs = []
@@ -776,8 +731,8 @@ def read_all_configs():
                             line = line.strip()
                             if line and not line.startswith('#'):
                                 configs.append(line)
-                except Exception as e:
-                    logger.error(f"Error reading {filepath}: {e}")
+                except:
+                    pass
     
     if not configs:
         sources = [
@@ -794,8 +749,8 @@ def read_all_configs():
                             line = line.strip()
                             if line and not line.startswith('#'):
                                 configs.append(line)
-                except Exception as e:
-                    logger.error(f"Error reading {filepath}: {e}")
+                except:
+                    pass
     
     return configs
 
@@ -826,7 +781,6 @@ def main():
         print(f"Total configs: {results['stats']['total']}")
         print(f"Successfully classified: {results['stats']['success']}")
         print(f"Failed: {results['stats']['failed']}")
-        print(f"CDN configs: {results['stats']['cdn_count']}")
         
         print(f"\n📊 Top Countries:")
         top_countries = sorted(
@@ -839,13 +793,10 @@ def main():
             print(f"  {country}: {count} configs")
         
         print(f"\n📁 Output saved to: configs/country/")
-        print(f"📁 CDN configs saved to: configs/cdn/")
         print("=" * 60)
         
     except Exception as e:
         logger.error(f"Error in main: {e}")
-        import traceback
-        logger.error(traceback.format_exc())
 
 if __name__ == "__main__":
     main()
