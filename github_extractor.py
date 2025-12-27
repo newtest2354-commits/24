@@ -7,7 +7,6 @@ import uuid
 from datetime import datetime
 from urllib.parse import urlparse
 import os
-from ip_detector import IPDetector
 
 SOURCES = [
     "https://raw.githubusercontent.com/Mosifree/-FREE2CONFIG/refs/heads/main/Reality",
@@ -20,7 +19,11 @@ SOURCES = [
     "https://cdn.jsdelivr.net/gh/Firmfox/Proxify@main/v2ray_configs/seperated_by_protocol/other.txt",
     "https://cdn.jsdelivr.net/gh/begugla0/nashvpn@main/hysteria2.txt",
     "https://cdn.jsdelivr.net/gh/LowiKLive/BypassWhitelistRu@main/WhiteList-Bypass_Ru.txt",
-    "https://cdn.jsdelivr.net/gh/roosterkid/openproxylist@main/V2RAY_RAW.txt"
+    "https://cdn.jsdelivr.net/gh/roosterkid/openproxylist@main/V2RAY_RAW.txt",
+    "https://raw.githubusercontent.com/vlesscollector/vlesscollector/refs/heads/main/vless_configs.txt",
+    "https://raw.githubusercontent.com/MhdiTaheri/V2rayCollector_Py/main/sub/Mix/mix.txt",
+    "https://raw.githubusercontent.com/Firmfox/Proxify/refs/heads/main/v2ray_configs/seperated_by_protocol/other.txt",
+    "https://raw.githubusercontent.com/Surfboardv2ray/TGParse/refs/heads/main/configtg.txt"
 ]
 
 class GitHubConfigExtractor:
@@ -29,7 +32,6 @@ class GitHubConfigExtractor:
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         })
-        self.ip_detector = IPDetector()
     
     def fetch_content(self, url):
         try:
@@ -166,11 +168,7 @@ class GitHubConfigExtractor:
     
     def tag_config(self, config, tag="ARISTA🔥"):
         if isinstance(config, dict):
-            country_name, country_code = self.ip_detector.detect_country(
-                'vmess://' + base64.b64encode(json.dumps(config, separators=(',', ':'), ensure_ascii=False).encode()).decode()
-            )
-            flag_emoji = self.ip_detector.get_flag_emoji(country_code)
-            config['ps'] = f"{flag_emoji} {country_name} | {tag}"
+            config['ps'] = tag
             json_str = json.dumps(config, separators=(',', ':'), ensure_ascii=False)
             return 'vmess://' + base64.b64encode(json_str.encode()).decode()
         
@@ -178,21 +176,15 @@ class GitHubConfigExtractor:
         if config_str.startswith('vmess://'):
             decoded = self.decode_vmess(config_str)
             if decoded and isinstance(decoded, dict):
-                country_name, country_code = self.ip_detector.detect_country(config_str)
-                flag_emoji = self.ip_detector.get_flag_emoji(country_code)
-                decoded['ps'] = f"{flag_emoji} {country_name} | {tag}"
+                decoded['ps'] = tag
                 json_str = json.dumps(decoded, separators=(',', ':'), ensure_ascii=False)
                 return 'vmess://' + base64.b64encode(json_str.encode()).decode()
             return config_str
         elif '#' in config_str:
             base = config_str.split('#')[0]
-            country_name, country_code = self.ip_detector.detect_country(config_str)
-            flag_emoji = self.ip_detector.get_flag_emoji(country_code)
-            return f"{base}#{flag_emoji} {country_name} | {tag}"
+            return f"{base}#{tag}"
         else:
-            country_name, country_code = self.ip_detector.detect_country(config_str)
-            flag_emoji = self.ip_detector.get_flag_emoji(country_code)
-            return f"{config_str}#{flag_emoji} {country_name} | {tag}"
+            return f"{config_str}#{tag}"
     
     def deduplicate(self, configs):
         unique_configs = []
@@ -243,37 +235,6 @@ class GitHubConfigExtractor:
         
         return categories
     
-    def organize_by_country(self, configs):
-        country_configs = {}
-        
-        for config in configs:
-            country_name, country_code = self.ip_detector.detect_country(config)
-            if country_name not in country_configs:
-                country_configs[country_name] = []
-            country_configs[country_name].append(config)
-        
-        return country_configs
-    
-    def save_country_files(self, country_configs):
-        os.makedirs('configs/country', exist_ok=True)
-        
-        for country_name, configs in country_configs.items():
-            if not configs:
-                continue
-                
-            safe_filename = re.sub(r'[^\w\-]', '_', country_name)
-            filename = f"configs/country/{safe_filename}.txt"
-            
-            content = f"# Country: {country_name}\n"
-            content += f"# Config Count: {len(configs)}\n"
-            content += "# Source: GitHub Repositories\n\n"
-            content += "\n".join(configs)
-            
-            with open(filename, 'w', encoding='utf-8') as f:
-                f.write(content)
-        
-        return len(country_configs)
-    
     def process_sources(self):
         all_configs = []
         failed_sources = []
@@ -318,10 +279,7 @@ class GitHubConfigExtractor:
         unique_configs = self.deduplicate(processed_configs)
         categories = self.categorize(unique_configs)
         
-        country_configs = self.organize_by_country(unique_configs)
-        country_files_count = self.save_country_files(country_configs)
-        
-        return categories, len(unique_configs), len(failed_sources), failed_configs, country_files_count
+        return categories, len(unique_configs), len(failed_sources), failed_configs
     
     def save_results(self, categories, total_count):
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -363,18 +321,16 @@ def main():
     
     try:
         extractor = GitHubConfigExtractor()
-        categories, total_count, failed_sources, failed_configs, country_files = extractor.process_sources()
+        categories, total_count, failed_sources, failed_configs = extractor.process_sources()
         saved_count = extractor.save_results(categories, total_count)
         
         print(f"\n✅ PROCESSING COMPLETE")
         print(f"Total unique configs: {total_count}")
         print(f"Configs saved: {saved_count}")
-        print(f"Country files created: {country_files}")
         if failed_sources > 0:
             print(f"Failed sources: {failed_sources}")
         if failed_configs > 0:
             print(f"Failed configs: {failed_configs}")
-        print(f"\n📁 Output saved to: configs/country/")
         
     except Exception as e:
         print(f"\n❌ ERROR: {e}")
