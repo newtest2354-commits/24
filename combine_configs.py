@@ -1,8 +1,6 @@
 import os
 import hashlib
 from datetime import datetime
-import re
-from ip_detector import IPDetector
 
 class ConfigCombiner:
     def __init__(self):
@@ -11,7 +9,6 @@ class ConfigCombiner:
             'hysteria2', 'hysteria', 'tuic', 
             'wireguard', 'other'
         ]
-        self.ip_detector = IPDetector()
     
     def read_configs(self, filepath):
         if not os.path.exists(filepath):
@@ -37,45 +34,6 @@ class ConfigCombiner:
                 unique_configs.append(config)
         
         return unique_configs
-    
-    def combine_by_country(self):
-        os.makedirs('configs/country', exist_ok=True)
-        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        
-        telegram_configs = self.read_configs('configs/telegram/all.txt')
-        github_configs = self.read_configs('configs/github/all.txt')
-        all_configs = telegram_configs + github_configs
-        
-        country_configs = {}
-        
-        for config in all_configs:
-            country_name, country_code = self.ip_detector.detect_country(config)
-            if country_name not in country_configs:
-                country_configs[country_name] = []
-            country_configs[country_name].append(config)
-        
-        total_country_files = 0
-        
-        for country_name, configs in country_configs.items():
-            if not configs:
-                continue
-                
-            unique_configs = self.deduplicate(configs)
-            safe_filename = re.sub(r'[^\w\-]', '_', country_name)
-            filename = f"configs/country/{safe_filename}.txt"
-            
-            content = f"# Country: {country_name}\n"
-            content += f"# Updated: {timestamp}\n"
-            content += f"# Config Count: {len(unique_configs)}\n"
-            content += f"# Sources: Telegram + GitHub\n\n"
-            content += "\n".join(unique_configs)
-            
-            with open(filename, 'w', encoding='utf-8') as f:
-                f.write(content)
-            
-            total_country_files += 1
-        
-        return total_country_files
     
     def combine(self):
         os.makedirs('configs/combined', exist_ok=True)
@@ -121,15 +79,12 @@ class ConfigCombiner:
         total_github = len(all_github)
         total_combined = len(all_combined)
         
-        country_files_count = self.combine_by_country()
-        
         print("=" * 60)
         print("CONFIG COMBINER")
         print("=" * 60)
         print(f"Telegram configs: {total_telegram}")
         print(f"GitHub configs: {total_github}")
         print(f"Combined unique configs: {total_combined}")
-        print(f"Country files created: {country_files_count}")
         print("\n📁 Files created in configs/combined/:")
         for category in self.categories:
             if os.path.exists(f'configs/combined/{category}.txt'):
@@ -137,7 +92,6 @@ class ConfigCombiner:
                     lines = [line for line in f if line.strip() and not line.startswith('#')]
                 print(f"  {category}.txt: {len(lines)} configs")
         print(f"  all.txt: {total_combined} configs")
-        print(f"\n📁 Output saved to: configs/country/")
         print("=" * 60)
 
 def main():
