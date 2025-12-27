@@ -37,7 +37,7 @@ jobs:
     - name: Clean old config files
       run: |
         rm -rf configs/
-        mkdir -p configs/telegram configs/github configs/combined configs/country configs/cdn
+        mkdir -p configs/telegram configs/github configs/combined configs/country
         
     - name: Run Telegram Config Extractor
       run: python telegram_extractor.py
@@ -52,9 +52,13 @@ jobs:
         
     - name: Run Country Classifier
       run: python country_classifier.py
-      timeout-minutes: 30
+      timeout-minutes: 35
       env:
-        MAX_WORKERS: 20
+        MAX_WORKERS: 25
+        
+    - name: Install additional dependencies for country classifier
+      run: |
+        pip install geoip2
         
     - name: Create summary
       run: |
@@ -63,15 +67,14 @@ jobs:
         echo "Telegram configs: $(wc -l < configs/telegram/all.txt 2>/dev/null || echo 0)" >> update_info.txt
         echo "GitHub configs: $(wc -l < configs/github/all.txt 2>/dev/null || echo 0)" >> update_info.txt
         echo "Combined configs: $(wc -l < configs/combined/all.txt 2>/dev/null || echo 0)" >> update_info.txt
-        echo "Country configs: $(find configs/country -name '*.txt' -exec cat {} \; 2>/dev/null | wc -l || echo 0)" >> update_info.txt
-        echo "CDN configs: $(wc -l < configs/cdn/all.txt 2>/dev/null || echo 0)" >> update_info.txt
+        echo "Country classification completed" >> update_info.txt
         
     - name: Configure Git
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
         
-    - name: Pull latest changes (avoid conflict)
+    - name: Pull latest changes
       run: |
         git pull origin main --rebase || true
         
@@ -81,7 +84,7 @@ jobs:
         if git diff --staged --quiet; then
           echo "No changes to commit"
         else
-          git commit -m "🔄 Configs update $(date -u '+%Y-%m-%d %H:%M')"
+          git commit -m "🔄 Configs update $(date -u '+%Y-%m-%d %H:%M UTC')"
           git pull origin main --rebase --autostash
           git push origin main
         fi
