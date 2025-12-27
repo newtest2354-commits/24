@@ -19,7 +19,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0  # دریافت تمام history برای جلوگیری از conflict
+        fetch-depth: 0
         
     - name: Random delay
       run: sleep $((RANDOM % 300 + 60))
@@ -37,7 +37,7 @@ jobs:
     - name: Clean old config files
       run: |
         rm -rf configs/
-        mkdir -p configs/telegram configs/github configs/combined configs/country
+        mkdir -p configs/telegram configs/github configs/combined configs/country configs/cdn
         
     - name: Run Telegram Config Extractor
       run: python telegram_extractor.py
@@ -63,6 +63,8 @@ jobs:
         echo "Telegram configs: $(wc -l < configs/telegram/all.txt 2>/dev/null || echo 0)" >> update_info.txt
         echo "GitHub configs: $(wc -l < configs/github/all.txt 2>/dev/null || echo 0)" >> update_info.txt
         echo "Combined configs: $(wc -l < configs/combined/all.txt 2>/dev/null || echo 0)" >> update_info.txt
+        echo "Country configs: $(find configs/country -name '*.txt' -exec cat {} \; 2>/dev/null | wc -l || echo 0)" >> update_info.txt
+        echo "CDN configs: $(wc -l < configs/cdn/all.txt 2>/dev/null || echo 0)" >> update_info.txt
         
     - name: Configure Git
       run: |
